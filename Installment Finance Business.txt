@@ -1,3 +1,5 @@
+==
+
 import java.security.SecureRandom;
 import java.time.Instant;
 
@@ -5,6 +7,7 @@ public class UlidGenerator {
 
     private static final char[] ENCODING_CHARS = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
     private static final int TIME_LENGTH = 10;
+    private static final int RANDOM_LENGTH = 16;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     public static String generateUlid() {
@@ -27,15 +30,26 @@ public class UlidGenerator {
     }
 
     private static void encodeRandom(byte[] randomBytes, char[] ulidChars) {
-        int index = TIME_LENGTH;
+        int charIndex = TIME_LENGTH;
+        int bits = 0;
+        int bitsAvailable = 0;
+
         for (byte b : randomBytes) {
-            ulidChars[index++] = ENCODING_CHARS[(b >> 4) & 0x1F];
-            ulidChars[index++] = ENCODING_CHARS[b & 0x0F];
+            bits = (bits << 8) | (b & 0xFF);
+            bitsAvailable += 8;
+            
+            while (bitsAvailable >= 5) {
+                bitsAvailable -= 5;
+                ulidChars[charIndex++] = ENCODING_CHARS[(bits >> bitsAvailable) & 0x1F];
+            }
+        }
+
+        if (bitsAvailable > 0) {
+            ulidChars[charIndex++] = ENCODING_CHARS[(bits << (5 - bitsAvailable)) & 0x1F];
         }
     }
 
     public static void main(String[] args) {
-        // Example usage
         for (int i = 0; i < 10; i++) {
             String uniqueId = generateUlid();
             System.out.println("Generated ULID: " + uniqueId);
