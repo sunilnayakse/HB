@@ -200,3 +200,52 @@ public class SequentialIdGenerator {
 - **Best for No Dependencies with Higher Complexity**: The **Custom ULID-like Generator** provides a good balance if you need ULID-like functionality without external dependencies, although it’s more complex to implement and maintain.
 
 Choose the approach that best fits your project requirements and constraints.
+
+
+=======
+import java.security.SecureRandom;
+import java.time.Instant;
+
+public class UlidGenerator {
+
+    private static final char[] ENCODING_CHARS = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
+    private static final int TIME_LENGTH = 10;
+    private static final int RANDOM_LENGTH = 16;
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    public static String generateUlid() {
+        long timestamp = Instant.now().toEpochMilli();
+        byte[] randomBytes = new byte[10];
+        RANDOM.nextBytes(randomBytes);
+
+        char[] ulidChars = new char[26];
+        encodeTime(timestamp, ulidChars);
+        encodeRandom(randomBytes, ulidChars);
+
+        return new String(ulidChars);
+    }
+
+    private static void encodeTime(long timestamp, char[] ulidChars) {
+        for (int i = TIME_LENGTH - 1; i >= 0; i--) {
+            ulidChars[i] = ENCODING_CHARS[(int) (timestamp % 32)];
+            timestamp /= 32;
+        }
+    }
+
+    private static void encodeRandom(byte[] randomBytes, char[] ulidChars) {
+        int charIndex = TIME_LENGTH;
+        for (byte randomByte : randomBytes) {
+            int byteVal = randomByte & 0xFF;
+            ulidChars[charIndex++] = ENCODING_CHARS[byteVal >>> 5];
+            ulidChars[charIndex++] = ENCODING_CHARS[byteVal & 0x1F];
+        }
+    }
+
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            String uniqueId = generateUlid();
+            System.out.println("Generated ULID: " + uniqueId);
+        }
+    }
+}
+
