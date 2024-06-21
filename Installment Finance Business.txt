@@ -1,58 +1,73 @@
-==
+When evaluating a candidate with 2 years of experience for a Java developer position, consider the following parameters:
 
-import java.security.SecureRandom;
-import java.time.Instant;
+1. **Technical Skills**:
+   - **Core Java**: Knowledge of object-oriented programming, data types, collections, exception handling, and multithreading.
+   - **Java Standard Libraries**: Familiarity with essential libraries and frameworks such as Java Collections Framework, Java Streams API, etc.
+   - **Frameworks**: Experience with popular frameworks like Spring (Spring Boot, Spring MVC) and Hibernate.
+   - **Build Tools**: Understanding of build tools like Maven or Gradle.
+   - **Unit Testing**: Experience with testing frameworks such as JUnit or TestNG.
+   - **Version Control**: Proficiency in using version control systems like Git.
 
-public class UlidGenerator {
+2. **Problem Solving and Algorithmic Skills**:
+   - Ability to solve algorithmic problems and understanding of basic algorithms and data structures.
+   - Familiarity with common design patterns and best practices in Java.
 
-    private static final char[] ENCODING_CHARS = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
-    private static final int TIME_LENGTH = 10;
-    private static final int RANDOM_LENGTH = 16;
-    private static final SecureRandom RANDOM = new SecureRandom();
+3. **Coding Skills**:
+   - Ability to write clean, maintainable, and efficient code.
+   - Proficiency in writing code that adheres to coding standards and conventions.
 
-    public static String generateUlid() {
-        long timestamp = Instant.now().toEpochMilli();
-        byte[] randomBytes = new byte[10];
-        RANDOM.nextBytes(randomBytes);
+4. **System Design**:
+   - Basic understanding of system design principles.
+   - Ability to design simple systems and components.
 
-        char[] ulidChars = new char[26];
-        encodeTime(timestamp, ulidChars);
-        encodeRandom(randomBytes, ulidChars);
+5. **Databases**:
+   - Experience with SQL and working with databases such as MySQL, PostgreSQL, or Oracle.
+   - Knowledge of ORM tools like Hibernate.
 
-        return new String(ulidChars);
-    }
+6. **Development Tools**:
+   - Familiarity with IDEs such as IntelliJ IDEA or Eclipse.
+   - Experience with debugging tools and techniques.
 
-    private static void encodeTime(long timestamp, char[] ulidChars) {
-        for (int i = TIME_LENGTH - 1; i >= 0; i--) {
-            ulidChars[i] = ENCODING_CHARS[(int) (timestamp % 32)];
-            timestamp /= 32;
-        }
-    }
+7. **Soft Skills**:
+   - **Communication**: Ability to articulate technical concepts clearly and effectively.
+   - **Teamwork**: Experience working in a collaborative environment and contributing to team goals.
+   - **Problem-Solving Attitude**: Proactiveness in identifying problems and coming up with effective solutions.
+   - **Learning Agility**: Willingness and ability to learn new technologies and methodologies.
 
-    private static void encodeRandom(byte[] randomBytes, char[] ulidChars) {
-        int charIndex = TIME_LENGTH;
-        int bits = 0;
-        int bitsAvailable = 0;
+8. **Project Experience**:
+   - Understanding of the candidate’s role and contributions in past projects.
+   - Knowledge of the development lifecycle and methodologies such as Agile or Scrum.
 
-        for (byte b : randomBytes) {
-            bits = (bits << 8) | (b & 0xFF);
-            bitsAvailable += 8;
-            
-            while (bitsAvailable >= 5) {
-                bitsAvailable -= 5;
-                ulidChars[charIndex++] = ENCODING_CHARS[(bits >> bitsAvailable) & 0x1F];
-            }
-        }
+9. **Code Review and Maintenance**:
+   - Experience with code reviews and understanding of the importance of code quality and maintainability.
+   - Ability to refactor and improve existing code.
 
-        if (bitsAvailable > 0) {
-            ulidChars[charIndex++] = ENCODING_CHARS[(bits << (5 - bitsAvailable)) & 0x1F];
-        }
-    }
+10. **Performance Tuning**:
+    - Basic understanding of performance tuning and optimization in Java applications.
 
-    public static void main(String[] args) {
-        for (int i = 0; i < 10; i++) {
-            String uniqueId = generateUlid();
-            System.out.println("Generated ULID: " + uniqueId);
-        }
-    }
-}
+### Sample Questions
+
+1. **Technical Skills**:
+   - Explain the differences between `HashMap` and `TreeMap` in Java.
+   - How does garbage collection work in Java?
+
+2. **Problem Solving and Algorithms**:
+   - Write a function to find the longest palindrome in a given string.
+   - Describe the time complexity of common sorting algorithms (e.g., QuickSort, MergeSort).
+
+3. **Coding Skills**:
+   - Provide a coding challenge, such as implementing a simple cache system using Java collections.
+
+4. **System Design**:
+   - Design a simple URL shortening service.
+
+5. **Databases**:
+   - Write a SQL query to find the second highest salary from a table of employee salaries.
+
+6. **Development Tools**:
+   - Describe your experience using Git in a team environment.
+
+7. **Project Experience**:
+   - Describe a challenging project you worked on and how you contributed to its success.
+
+By evaluating candidates on these parameters, you can get a comprehensive understanding of their skills, experience, and potential fit for your Java developer position.
