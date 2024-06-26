@@ -1,110 +1,75 @@
-To implement instance-specific prefixes or suffixes with UUIDs for ensuring uniqueness across instances and to test the sorting and sequence of the ULIDs, follow these steps:
+To convert the ULID generation into a utility method and test it in a multi-instance environment with multi-threading and parallel streams, we can follow these steps:
 
-### Implementation with Instance-Specific Suffix
+1. **Utility Class**: Create a `ULIDUtil` class to generate ULIDs with an instance-specific suffix.
+2. **Main Class for Testing**: Create a `ULIDTest` class to simulate multiple instances, each running multiple threads generating ULIDs.
 
-1. **Generate ULIDs with an Instance-Specific Suffix**:
-   - Use a UUID to generate a unique identifier for each instance.
-   - Append this identifier to each generated ULID.
+### Utility Class: `ULIDUtil`
 
-2. **Test the Sorting and Sequence**:
-   - Generate multiple ULIDs from different instances.
-   - Combine the ULIDs.
-   - Sort the combined list and verify the order.
-
-### Step-by-Step Implementation:
-
-#### Step 1: Generate ULIDs with an Instance-Specific Suffix
-
-Here’s the updated `UlidGenerator` class:
+Here is the `ULIDUtil` class with a static method to generate ULIDs with an instance-specific suffix:
 
 ```java
 import de.huxhorn.sulky.ulid.ULID;
 
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
-public class UlidGenerator {
+public class ULIDUtil {
 
     private static final ULID ulid = new ULID();
-    private static final String instanceId = UUID.randomUUID().toString().substring(0, 8); // Unique identifier for each instance
 
-    public static String generateUlid() {
-        return ulid.nextULID() + "-" + instanceId;
+    public static String generateUlid(String instanceId) {
+        return ulid.nextULID() + instanceId;
     }
 
-    public static void main(String[] args) {
-        int numThreads = 10;
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-
-        for (int i = 0; i < numThreads; i++) {
-            executor.submit(() -> {
-                for (int j = 0; j < 10; j++) {
-                    String uniqueId = generateUlid();
-                    System.out.println("Generated ULID: " + uniqueId);
-                }
-            });
-        }
-
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+    public static String getInstanceId() {
+        return UUID.randomUUID().toString().replaceAll("-", "").substring(0, 6);
     }
 }
 ```
 
-#### Step 2: Test the Sorting and Sequence
+### Main Class for Testing: `ULIDTest`
 
-Here’s the testing class to simulate multiple instances and verify sorting:
+In this class, we simulate multiple instances using a `ForkJoinPool` to run tasks in parallel:
 
 ```java
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
-public class UlidSortingTest {
-
-    private static final ULID ulid = new ULID();
-
-    public static String generateUlidWithInstanceId(String instanceId) {
-        return ulid.nextULID() + "-" + instanceId;
-    }
+public class ULIDTest {
 
     public static void main(String[] args) {
-        int numInstances = 5;
-        int numUlidsPerInstance = 10;
-        ExecutorService executor = Executors.newFixedThreadPool(numInstances);
+        int numInstances = 5; // Number of different instances
+        int numThreadsPerInstance = 5; // Number of threads per instance
+        int numUlidsPerThread = 10; // Number of ULIDs generated per thread
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool(numInstances * numThreadsPerInstance);
         List<String> ulidList = Collections.synchronizedList(new ArrayList<>());
 
+        List<String> instanceIds = new ArrayList<>();
         for (int i = 0; i < numInstances; i++) {
-            String instanceId = UUID.randomUUID().toString().substring(0, 8);
-            executor.submit(() -> {
-                for (int j = 0; j < numUlidsPerInstance; j++) {
-                    String uniqueId = generateUlidWithInstanceId(instanceId);
-                    ulidList.add(uniqueId);
-                    System.out.println("Generated ULID: " + uniqueId);
-                }
-            });
+            instanceIds.add(ULIDUtil.getInstanceId());
         }
 
-        executor.shutdown();
+        forkJoinPool.submit(() -> instanceIds.parallelStream().forEach(instanceId -> {
+            IntStream.range(0, numThreadsPerInstance).parallel().forEach(threadIndex -> {
+                for (int j = 0; j < numUlidsPerThread; j++) {
+                    String ulid = ULIDUtil.generateUlid(instanceId);
+                    ulidList.add(ulid);
+                    System.out.println("Generated ULID: " + ulid);
+                }
+            });
+        })).join();
+
+        forkJoinPool.shutdown();
         try {
-            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
+            if (!forkJoinPool.awaitTermination(60, TimeUnit.SECONDS)) {
+                forkJoinPool.shutdownNow();
             }
         } catch (InterruptedException e) {
-            executor.shutdownNow();
+            forkJoinPool.shutdownNow();
             Thread.currentThread().interrupt();
         }
 
@@ -113,31 +78,24 @@ public class UlidSortingTest {
 
         // Print sorted ULIDs
         System.out.println("\nSorted ULIDs:");
-        for (String ulid : ulidList) {
-            System.out.println(ulid);
-        }
+        ulidList.forEach(System.out::println);
     }
 }
 ```
 
-### Explanation:
+### Explanation
 
-1. **Instance-Specific Identifier**: 
-   - Each instance generates a unique identifier using `UUID.randomUUID().toString().substring(0, 8)`.
-   - This identifier is appended to the generated ULID to ensure uniqueness.
+1. **Utility Class (`ULIDUtil`)**:
+   - `generateUlid(String instanceId)`: Generates a ULID with an instance-specific suffix.
+   - `getInstanceId()`: Generates a unique instance ID using the first 6 characters of a UUID.
 
-2. **Multi-Instance Simulation**: 
-   - The `UlidSortingTest` class simulates multiple instances by creating separate threads, each with a unique instance identifier.
-   - Each thread generates ULIDs and stores them in a synchronized list (`ulidList`).
+2. **Main Class (`ULIDTest`)**:
+   - Configures the number of instances, threads per instance, and ULIDs generated per thread.
+   - Uses a `ForkJoinPool` to simulate multiple instances and threads.
+   - Each instance generates ULIDs in parallel using `IntStream.range(...).parallel()`.
+   - Collects generated ULIDs in a synchronized list.
+   - Sorts and prints the ULIDs to verify uniqueness and order.
 
-3. **Sorting and Verification**: 
-   - After generating all ULIDs, the list is sorted using `Collections.sort`.
-   - Sorted ULIDs are printed to verify the correct chronological order.
+### Running the Code
 
-### Testing the Sorting:
-
-- Run the `UlidSortingTest` class.
-- Observe the generated ULIDs to ensure that they include the instance-specific suffix.
-- Check the sorted output to verify that the ULIDs are ordered correctly, preserving the chronological sequence.
-
-By appending an instance-specific identifier to the ULIDs, you ensure uniqueness across different instances. The sorting test verifies that these ULIDs maintain their order correctly even when generated from multiple sources.
+When you run the `ULIDTest.main` method, it simulates multiple instances, each with multiple threads generating ULIDs concurrently. The generated ULIDs are collected, sorted, and printed to ensure they maintain their order and uniqueness.
