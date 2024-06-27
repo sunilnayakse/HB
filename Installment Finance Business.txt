@@ -1,13 +1,3 @@
-To convert the ULID generation into a utility method and test it in a multi-instance environment with multi-threading and parallel streams, we can follow these steps:
-
-1. **Utility Class**: Create a `ULIDUtil` class to generate ULIDs with an instance-specific suffix.
-2. **Main Class for Testing**: Create a `ULIDTest` class to simulate multiple instances, each running multiple threads generating ULIDs.
-
-### Utility Class: `ULIDUtil`
-
-Here is the `ULIDUtil` class with a static method to generate ULIDs with an instance-specific suffix:
-
-```java
 import de.huxhorn.sulky.ulid.ULID;
 
 import java.util.UUID;
@@ -15,87 +5,22 @@ import java.util.UUID;
 public class ULIDUtil {
 
     private static final ULID ulid = new ULID();
+    private static final int PREFIX_LENGTH = 6;
 
-    public static String generateUlid(String instanceId) {
-        return ulid.nextULID() + instanceId;
+    public static synchronized String generateUlid() {
+        String ulidPart = ulid.nextULID();
+        String instancePrefix = getInstancePrefix();
+        return (instancePrefix + ulidPart).substring(0, 32); // Ensure the final length is 32 characters
     }
 
-    public static String getInstanceId() {
-        return UUID.randomUUID().toString().replaceAll("-", "").substring(0, 6);
+    private static String getInstancePrefix() {
+        return UUID.randomUUID().toString().replaceAll("-", "").substring(0, PREFIX_LENGTH);
     }
-}
-```
-
-### Main Class for Testing: `ULIDTest`
-
-In this class, we simulate multiple instances using a `ForkJoinPool` to run tasks in parallel:
-
-```java
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-
-public class ULIDTest {
 
     public static void main(String[] args) {
-        int numInstances = 5; // Number of different instances
-        int numThreadsPerInstance = 5; // Number of threads per instance
-        int numUlidsPerThread = 10; // Number of ULIDs generated per thread
-
-        ForkJoinPool forkJoinPool = new ForkJoinPool(numInstances * numThreadsPerInstance);
-        List<String> ulidList = Collections.synchronizedList(new ArrayList<>());
-
-        List<String> instanceIds = new ArrayList<>();
-        for (int i = 0; i < numInstances; i++) {
-            instanceIds.add(ULIDUtil.getInstanceId());
+        for (int i = 0; i < 10; i++) {
+            String ulid = generateUlid();
+            System.out.println("Generated ULID: " + ulid + " (length: " + ulid.length() + ")");
         }
-
-        forkJoinPool.submit(() -> instanceIds.parallelStream().forEach(instanceId -> {
-            IntStream.range(0, numThreadsPerInstance).parallel().forEach(threadIndex -> {
-                for (int j = 0; j < numUlidsPerThread; j++) {
-                    String ulid = ULIDUtil.generateUlid(instanceId);
-                    ulidList.add(ulid);
-                    System.out.println("Generated ULID: " + ulid);
-                }
-            });
-        })).join();
-
-        forkJoinPool.shutdown();
-        try {
-            if (!forkJoinPool.awaitTermination(60, TimeUnit.SECONDS)) {
-                forkJoinPool.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            forkJoinPool.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-
-        // Sort ULIDs
-        Collections.sort(ulidList);
-
-        // Print sorted ULIDs
-        System.out.println("\nSorted ULIDs:");
-        ulidList.forEach(System.out::println);
     }
 }
-```
-
-### Explanation
-
-1. **Utility Class (`ULIDUtil`)**:
-   - `generateUlid(String instanceId)`: Generates a ULID with an instance-specific suffix.
-   - `getInstanceId()`: Generates a unique instance ID using the first 6 characters of a UUID.
-
-2. **Main Class (`ULIDTest`)**:
-   - Configures the number of instances, threads per instance, and ULIDs generated per thread.
-   - Uses a `ForkJoinPool` to simulate multiple instances and threads.
-   - Each instance generates ULIDs in parallel using `IntStream.range(...).parallel()`.
-   - Collects generated ULIDs in a synchronized list.
-   - Sorts and prints the ULIDs to verify uniqueness and order.
-
-### Running the Code
-
-When you run the `ULIDTest.main` method, it simulates multiple instances, each with multiple threads generating ULIDs concurrently. The generated ULIDs are collected, sorted, and printed to ensure they maintain their order and uniqueness.
