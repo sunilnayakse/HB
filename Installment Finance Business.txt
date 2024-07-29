@@ -24,3 +24,34 @@ public class ULIDUtil {
         }
     }
 }
+
+
+
+.......
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+public class DateFormatUtil {
+
+    public static String reformatDate(String input) {
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyyMMdd HH:mm", Locale.ENGLISH);
+        SimpleDateFormat outputFormat = new SimpleDateFormat("dd MMM hh:mm a", Locale.ENGLISH);
+
+        try {
+            Date date = inputFormat.parse(input);
+            return outputFormat.format(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null; // or handle the error as needed
+        }
+    }
+
+    public static void main(String[] args) {
+        String input = "20240726 16:01";
+        String output = reformatDate(input);
+        System.out.println("Formatted date: " + output); // Output: "26 Jul 04:01 PM"
+    }
+}
