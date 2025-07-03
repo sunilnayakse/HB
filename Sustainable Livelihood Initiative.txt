@@ -334,6 +334,10 @@ When interviewing a Go developer, some key concepts can be assessed through disc
 These questions are aimed at understanding how deeply the candidate understands Go and whether they can apply that knowledge to real-world problems. Their answers should reflect experience, good judgment, and a solid grasp of Go's philosophy and best practices.
 
 
+I would like to inform you that my wife is currently experiencing a health issue and will be undergoing surgery. In this regard, I am planning to take leave on July 30th, 31st, and August 1st. Additionally, I will be traveling to my hometown for a week and will continue working from home until August 15th.
+
+Kindly plan accordingly. Thank you for your understanding and support.
+
 
 
 
